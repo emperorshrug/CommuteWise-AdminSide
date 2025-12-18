@@ -1,73 +1,95 @@
-// [FIX] REMOVED 'import React'
-import { MapPin, Bus, Navigation } from "lucide-react";
+// [FIX] Removed unused 'MapPin' import
+import { Navigation, ChevronDown } from "lucide-react";
 import { Stop } from "../../types";
+import { getMarkerStyle } from "../../utils/markerUtils";
 
 interface StopListProps {
   stops: Stop[];
   onSelectStop: (marker: Stop) => void;
+  activeTab: string;
 }
 
-export default function StopList({ stops, onSelectStop }: StopListProps) {
+export default function StopList({
+  stops,
+  onSelectStop,
+  activeTab,
+}: StopListProps) {
   if (stops.length === 0) {
     return (
-      <div className="p-10 text-center text-slate-400 flex flex-col items-center">
-        <Navigation size={40} className="mb-4 opacity-50" />
-        <p className="text-sm font-medium">No stops found.</p>
-        <p className="text-xs mt-1">Click the map to add one.</p>
+      <div className="p-10 text-center text-slate-400 flex flex-col items-center mt-10">
+        <Navigation size={48} className="mb-4 opacity-30" />
+        <p className="text-base font-semibold text-slate-500">
+          No {activeTab} stops found.
+        </p>
+        <p className="text-xs mt-1">
+          Try searching or add a new point on the map.
+        </p>
       </div>
     );
   }
 
+  // GROUP BY BARANGAY
+  const grouped = stops.reduce((acc, stop) => {
+    const b = stop.barangay || "Unassigned";
+    if (!acc[b]) acc[b] = [];
+    acc[b].push(stop);
+    return acc;
+  }, {} as Record<string, Stop[]>);
+
   return (
-    <div className="p-2 space-y-2">
-      {stops.map((stop) => {
-        const isTerminal = stop.type === "terminal";
-        return (
-          <div
-            key={stop.id}
-            onClick={() => onSelectStop(stop)}
-            className={`
-              group flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200
-              ${
-                isTerminal
-                  ? "bg-red-50/50 border-red-100 hover:border-red-300 hover:shadow-md"
-                  : "bg-white border-slate-100 hover:border-emerald-300 hover:shadow-md"
-              }
-            `}
-          >
-            {/* ICON BOX */}
-            <div
-              className={`
-              w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors
-              ${
-                isTerminal
-                  ? "bg-red-100 text-red-500"
-                  : "bg-emerald-100 text-emerald-600"
-              }
-            `}
-            >
-              {isTerminal ? <Bus size={18} /> : <MapPin size={18} />}
-            </div>
-
-            {/* TEXT INFO */}
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-slate-700 text-sm truncate group-hover:text-emerald-700 transition-colors">
-                {stop.name || "Unnamed Point"}
-              </h4>
-              <p className="text-xs text-slate-400 truncate">
-                {stop.barangay || "No Barangay"}
-              </p>
-            </div>
-
-            {/* VEHICLE COUNT BADGE */}
-            {stop.vehicleTypes.length > 0 && (
-              <div className="px-2 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
-                {stop.vehicleTypes.length}
-              </div>
-            )}
+    <div className="p-4 space-y-4">
+      {Object.entries(grouped).map(([barangay, items]) => (
+        <div
+          key={barangay}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+        >
+          {/* BARANGAY HEADER */}
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+            <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider">
+              {barangay}
+            </h4>
+            <span className="bg-white px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 border border-slate-200">
+              {items.length}
+            </span>
           </div>
-        );
-      })}
+
+          {/* STOP ITEMS */}
+          <div className="divide-y divide-slate-50">
+            {items.map((stop) => {
+              // [FIX] Destructure 'colorClass' instead of just 'color'
+              const { colorClass, icon } = getMarkerStyle(stop.vehicleTypes);
+              return (
+                <div
+                  key={stop.id}
+                  onClick={() => onSelectStop(stop)}
+                  className="group flex items-center gap-3 p-3 cursor-pointer hover:bg-emerald-50 transition-colors"
+                >
+                  {/* ICON - [FIX] Used Tailwind class instead of inline style */}
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white shadow-sm ${colorClass}`}
+                  >
+                    <span className="text-xs">{icon}</span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-slate-700 text-sm truncate group-hover:text-emerald-700">
+                      {stop.name || "Unnamed Point"}
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      {stop.type === "terminal" ? "Terminal" : "Stop"}
+                    </p>
+                  </div>
+
+                  <ChevronDown
+                    size={14}
+                    className="text-slate-300 -rotate-90 group-hover:text-emerald-400"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
