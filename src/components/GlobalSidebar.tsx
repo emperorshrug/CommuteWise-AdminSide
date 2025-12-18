@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Map, LayoutDashboard, Settings, LogOut, Menu } from "lucide-react";
+import { Map, LayoutDashboard, Settings, LogOut } from "lucide-react";
 
 export default function GlobalSidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
