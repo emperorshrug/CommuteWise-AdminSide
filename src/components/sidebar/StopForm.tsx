@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { X, MapPin } from "lucide-react"; // Import icons
+import { useState, useEffect, useRef } from "react";
+import { X } from "lucide-react";
 import { Stop } from "../../types";
 import { useGeocoding } from "../../hooks/useGeocoding";
+import { VehicleSelector } from "../ui/VehicleSelector";
+import { BarangaySelect } from "../ui/BarangaySelect";
 
 interface StopFormProps {
-  location: Stop; // Or { lat: number, lng: number } depending on usage
+  location: Stop;
   barangays: string[];
   vehicleOptions: string[];
   onSave: (
@@ -23,6 +25,7 @@ export default function StopForm({
   onSave,
   onCancel,
 }: StopFormProps) {
+  // STATE
   const [name, setName] = useState(location.name || "");
   const [type, setType] = useState<"terminal" | "stop">(
     location.type || "stop"
@@ -32,73 +35,82 @@ export default function StopForm({
     location.vehicleTypes || []
   );
 
-  // USE OUR NEW GEOCODING HOOK
   const { getBarangay, isLoadingAddress } = useGeocoding();
 
-  const handleGeocode = async () => {
-    const foundBarangay = await getBarangay(location.lat, location.lng);
-    if (foundBarangay) {
-      setBarangay(foundBarangay);
-    } else {
-      alert("Could not determine barangay for this location.");
+  // [FIX] TRACK PREVIOUS PROP TO DETECT DRAG EVENTS SAFELY
+  const prevBarangayProp = useRef(location.barangay);
+
+  useEffect(() => {
+    // Logic: Only reset if the PROP changed from "Something" to "Empty"
+    // This happens when the user drags an existing pin to a new spot.
+    if (prevBarangayProp.current !== "" && location.barangay === "") {
+      // [FIX] Wrap in setTimeout to satisfy "no-synchronous-updates" rule
+      setTimeout(() => setBarangay(""), 0);
     }
+    // Update the ref for the next render
+    prevBarangayProp.current = location.barangay;
+  }, [location.barangay]);
+
+  const handleGeocode = async () => {
+    const found = await getBarangay(location.lat, location.lng);
+    if (found) setBarangay(found);
+    else alert("Could not determine barangay.");
   };
 
   const handleVehicleToggle = (v: string) => {
     setVehicleTypes((prev) =>
-      prev.includes(v) ? prev.filter((item) => item !== v) : [...prev, v]
+      prev.includes(v) ? prev.filter((i) => i !== v) : [...prev, v]
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(name, type, vehicleTypes, barangay);
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="p-4 space-y-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(name, type, vehicleTypes, barangay);
+      }}
+      className="p-5 space-y-5"
+    >
       <div className="flex justify-between items-center mb-2">
-        <h3 className="font-bold text-lg text-slate-800">
-          {location.id ? "Edit Point" : "New Point"}
+        <h3 className="font-bold text-xl text-slate-800 tracking-tight">
+          {location.id && location.name ? "Edit Point" : "New Point"}
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          className="text-slate-400 hover:text-slate-600"
-          title="Close Form"
+          aria-label="Close Form"
+          className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
         >
-          <X size={20} />
+          <X size={24} />
         </button>
       </div>
 
-      {/* NAME INPUT */}
       <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-          Name
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+          Point Name
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full p-2 border border-slate-200 rounded text-sm focus:outline-emerald-500"
+          className="w-full p-3 border border-slate-200 rounded-lg text-base text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow placeholder:text-slate-400"
           placeholder="e.g. Tandang Sora Bayan"
           required
         />
       </div>
 
-      {/* TYPE SELECT */}
       <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-          Type
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+          Point Type
         </label>
-        <div className="flex gap-2">
+        <div className="flex p-1 bg-slate-100 rounded-lg">
           <button
             type="button"
             onClick={() => setType("stop")}
-            className={`flex-1 py-2 text-sm rounded border ${
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
               type === "stop"
-                ? "bg-emerald-500 text-white border-emerald-500"
-                : "bg-white text-slate-600 border-slate-200"
+                ? "bg-white text-emerald-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
             Regular Stop
@@ -106,10 +118,10 @@ export default function StopForm({
           <button
             type="button"
             onClick={() => setType("terminal")}
-            className={`flex-1 py-2 text-sm rounded border ${
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
               type === "terminal"
-                ? "bg-red-500 text-white border-red-500"
-                : "bg-white text-slate-600 border-slate-200"
+                ? "bg-white text-red-500 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
             Terminal
@@ -117,90 +129,26 @@ export default function StopForm({
         </div>
       </div>
 
-      {/* BARANGAY + GEOCODE BUTTON */}
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-          Barangay
-        </label>
-        <div className="flex gap-2">
-          <input
-            list="barangay-list"
-            value={barangay}
-            onChange={(e) => setBarangay(e.target.value)}
-            className="flex-1 p-2 border border-slate-200 rounded text-sm focus:outline-emerald-500"
-            placeholder="Select or Search..."
-          />
-          <button
-            type="button"
-            onClick={handleGeocode}
-            disabled={isLoadingAddress}
-            className="p-2 bg-slate-100 border border-slate-200 rounded hover:bg-slate-200 transition-colors disabled:opacity-50"
-            title="Auto-detect Barangay"
-          >
-            <MapPin
-              size={18}
-              className={isLoadingAddress ? "animate-spin" : "text-emerald-600"}
-            />
-          </button>
-        </div>
-        <datalist id="barangay-list">
-          {barangays.map((b) => (
-            <option key={b} value={b} />
-          ))}
-        </datalist>
-      </div>
+      <BarangaySelect
+        value={barangay}
+        onChange={setBarangay}
+        options={barangays}
+        onGeocode={handleGeocode}
+        isLoadingGeocode={isLoadingAddress}
+      />
 
-      {/* HOLLOW CHECKBOXES FOR VEHICLES */}
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-          Vehicles
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {vehicleOptions.map((v) => {
-            const isSelected = vehicleTypes.includes(v);
-            return (
-              <div
-                key={v}
-                onClick={() => handleVehicleToggle(v)}
-                className={`cursor-pointer flex items-center gap-2 p-2 border rounded transition-all ${
-                  isSelected
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-slate-200 hover:border-emerald-300"
-                }`}
-              >
-                {/* CUSTOM HOLLOW CHECKBOX */}
-                <div
-                  className={`w-4 h-4 rounded-sm border flex items-center justify-center ${
-                    isSelected
-                      ? "border-emerald-500 bg-emerald-500"
-                      : "border-slate-400 bg-white"
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="w-1.5 h-1.5 bg-white rounded-[1px]" />
-                  )}
-                </div>
-                <span
-                  className={`text-sm ${
-                    isSelected
-                      ? "text-emerald-700 font-medium"
-                      : "text-slate-600"
-                  }`}
-                >
-                  {v}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <VehicleSelector
+        options={vehicleOptions}
+        selectedValues={vehicleTypes}
+        onToggle={handleVehicleToggle}
+      />
 
-      <div className="pt-2 flex gap-2">
+      <div className="pt-4">
         <button
           type="submit"
-          className="flex-1 bg-emerald-600 text-white py-2 rounded shadow hover:bg-emerald-700 font-medium"
+          className="w-full bg-emerald-600 text-white py-3.5 rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-600/30 transition-all font-bold text-base tracking-wide active:scale-[0.98]"
         >
-          Save Stop
+          Save Point
         </button>
       </div>
     </form>

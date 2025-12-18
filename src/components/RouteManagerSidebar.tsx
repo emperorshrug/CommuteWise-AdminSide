@@ -1,55 +1,49 @@
-import SidebarHeader from "./sidebar/SidebarHeader";
-import StopForm from "./sidebar/StopForm";
+// [FIX] Removed 'React' from import to solve the lint error
 import StopList from "./sidebar/StopList";
-import type { Stop } from "../types";
+import StopForm from "./sidebar/StopForm";
+import SidebarHeader from "./sidebar/SidebarHeader";
+import { useRouteStore } from "../store/useRouteStore";
 
-interface SidebarProps {
-  stops: Stop[];
-  newStopLocation: { lat: number; lng: number } | null;
-  onSaveStop: (
+export default function RouteManagerSidebar() {
+  const { markers, selectedMarker, selectMarker, saveMarker } = useRouteStore();
+
+  const handleSave = (
     name: string,
     type: "terminal" | "stop",
     vehicleTypes: string[],
     barangay: string
-  ) => void;
-  onCancel: () => void;
-}
+  ) => {
+    if (selectedMarker) {
+      saveMarker({
+        ...selectedMarker,
+        name,
+        type,
+        vehicleTypes,
+        barangay,
+      });
+    }
+  };
 
-const VEHICLE_OPTIONS = ["Bus", "Jeepney", "E-Jeepney", "Tricycle"];
-const BARANGAYS = [
-  "Tandang Sora",
-  "Pasong Tamo",
-  "Culiat",
-  "Sauyo",
-  "Sangandaan",
-  "Bahay Toro",
-];
-
-export default function RouteManagerSidebar({
-  stops,
-  newStopLocation,
-  onSaveStop,
-  onCancel,
-}: SidebarProps) {
   return (
-    <div className="w-96 h-full bg-white shadow-xl z-10 flex flex-col border-r border-emerald-100 font-sans">
-      {/* 1. Header is static */}
+    <div className="w-96 bg-white h-full shadow-xl z-10 flex flex-col border-r border-slate-200">
       <SidebarHeader />
 
-      {/* 2. Content is conditional */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
-        {newStopLocation ? (
+      <div className="flex-1 overflow-y-auto">
+        {selectedMarker ? (
           <StopForm
-            // The 'key' trick for resetting state still works here
-            key={`${newStopLocation.lat}-${newStopLocation.lng}`}
-            location={newStopLocation}
-            barangays={BARANGAYS}
-            vehicleOptions={VEHICLE_OPTIONS}
-            onSave={onSaveStop}
-            onCancel={onCancel}
+            key={selectedMarker.id}
+            location={selectedMarker}
+            barangays={["Tandang Sora", "Pasong Tamo", "Culiat", "Sangandaan"]}
+            vehicleOptions={["Jeepney", "Tricycle", "Bus", "UV Express"]}
+            onSave={handleSave}
+            onCancel={() => selectMarker(null)}
           />
         ) : (
-          <StopList stops={stops} vehicleOptions={VEHICLE_OPTIONS} />
+          <StopList
+            stops={markers}
+            // [FIX] This now matches the interface in StopList.tsx
+            onSelectStop={selectMarker}
+          />
         )}
       </div>
     </div>

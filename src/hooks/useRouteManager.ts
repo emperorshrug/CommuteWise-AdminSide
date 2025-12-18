@@ -66,20 +66,33 @@ export const useRouteManager = () => {
   const handleMapClick = useCallback((lat: number, lng: number) => {
     if (isNaN(lat) || isNaN(lng)) return;
 
-    // 1. SET TEMP MARKER FOR VISUAL FEEDBACK
+    // 1. ALWAYS UPDATE VISUAL GHOST MARKER
     setTempMarker({ lat, lng });
 
-    // 2. OPEN FORM WITH NEW DATA
-    const newMarker: Stop = {
-      id: crypto.randomUUID(),
-      lat,
-      lng,
-      type: "stop",
-      name: "",
-      barangay: "",
-      vehicleTypes: [],
-    };
-    setSelectedMarker(newMarker);
+    // 2. SMART UPDATE LOGIC
+    setSelectedMarker((prev) => {
+      if (prev) {
+        // CAPS LOCK COMMENT: IF FORM IS ALREADY OPEN, KEEP DATA BUT UPDATE COORDS
+        // ALSO RESET BARANGAY SO USER KNOWS TO RE-DETECT IT
+        return {
+          ...prev,
+          lat,
+          lng,
+          barangay: "", // RESET BARANGAY ON MOVE
+        };
+      } else {
+        // IF NOTHING SELECTED, CREATE NEW EMPTY STOP
+        return {
+          id: crypto.randomUUID(),
+          lat,
+          lng,
+          type: "stop",
+          name: "",
+          barangay: "",
+          vehicleTypes: [],
+        };
+      }
+    });
   }, []);
 
   const saveMarker = async (marker: Stop) => {
