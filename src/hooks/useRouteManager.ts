@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../types/supabase"; // CAPS LOCK COMMENT: NOW POINTS TO CORRECT FILE
+import { Database } from "../types/supabase";
 
-// --- INITIALIZE SUPABASE CLIENT ---
-// CAPS LOCK COMMENT: ENV ERRORS ARE FIXED BY VITE-ENV.D.TS
+// CAPS LOCK COMMENT: REMOVED UNUSED 'StopRow' TYPE DEFINITION
+type StopInsert = Database["public"]["Tables"]["stops"]["Insert"];
+
 const supabase = createClient<Database>(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -20,7 +21,6 @@ export interface MapMarker {
 }
 
 export const useRouteManager = () => {
-  // --- STATE MANAGEMENT ---
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +37,8 @@ export const useRouteManager = () => {
       if (error) throw error;
 
       if (data) {
-        // CAPS LOCK COMMENT: MAPPING DB TYPES TO UI TYPES
-        const formattedData: MapMarker[] = data.map((item: any) => ({
+        // CAPS LOCK COMMENT: TYPESCRIPT AUTOMATICALLY INFERS TYPES HERE
+        const formattedData: MapMarker[] = data.map((item) => ({
           id: item.id,
           lat: item.latitude,
           lng: item.longitude,
@@ -69,13 +69,16 @@ export const useRouteManager = () => {
   const saveMarker = async (marker: MapMarker) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.from("stops").upsert({
+
+      const payload: StopInsert = {
         id: marker.id,
         latitude: marker.lat,
         longitude: marker.lng,
         type: marker.type,
         name: marker.name,
-      });
+      };
+
+      const { error } = await supabase.from("stops").upsert(payload);
 
       if (error) throw error;
       await fetchMarkers();

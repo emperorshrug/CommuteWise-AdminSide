@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-// CAPS LOCK COMMENT: NOW IMPORTING FROM CORRECT HOOKS PATH
 import { MapMarker } from "../hooks/useRouteManager";
 
 interface RouteManagerMapProps {
@@ -21,6 +20,7 @@ export const RouteManagerMap: React.FC<RouteManagerMapProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const markerRefs = useRef<{ [key: string]: mapboxgl.Marker }>({});
 
+  // CAPS LOCK COMMENT: ADDED 'onMapClick' TO DEPENDENCY ARRAY TO SATISFY LINT
   useEffect(() => {
     if (map.current) return;
     if (!mapContainer.current) return;
@@ -35,7 +35,7 @@ export const RouteManagerMap: React.FC<RouteManagerMapProps> = ({
     map.current.on("click", (e) => {
       onMapClick(e.lngLat.lat, e.lngLat.lng);
     });
-  }, []);
+  }, [onMapClick]); // DEPENDENCY ADDED HERE
 
   useEffect(() => {
     if (!map.current) return;
@@ -45,12 +45,13 @@ export const RouteManagerMap: React.FC<RouteManagerMapProps> = ({
 
     markers.forEach((marker) => {
       const color = marker.type === "TERMINAL" ? "#FF0000" : "#3FB1CE";
-      const el = document.createElement("div");
 
-      // CAPS LOCK COMMENT: USING TAILWIND UTILITY CLASSES WHERE POSSIBLE,
-      // BUT DYNAMIC COLORS STILL NEED INLINE OR CUSTOM CLASSES.
-      el.className = "marker rounded-full cursor-pointer w-5 h-5";
-      el.style.backgroundColor = color; // DYNAMIC COLOR IS OKAY INLINE
+      const el = document.createElement("div");
+      // CAPS LOCK COMMENT: TAILWIND CLASSES USED HERE.
+      // IF YOU STILL SEE INLINE STYLE ERRORS, ENSURE YOU DELETED THE OLD FILE IN ROOT src/
+      el.className =
+        "w-5 h-5 rounded-full cursor-pointer border-2 border-white shadow-md";
+      el.style.backgroundColor = color; // DYNAMIC COLOR MUST BE INLINE OR DYNAMIC CLASS
 
       const newMapboxMarker = new mapboxgl.Marker({ element: el })
         .setLngLat([marker.lng, marker.lat])
@@ -65,8 +66,5 @@ export const RouteManagerMap: React.FC<RouteManagerMapProps> = ({
     });
   }, [markers, onMarkerClick]);
 
-  return (
-    // CAPS LOCK COMMENT: REPLACED INLINE STYLES WITH TAILWIND CLASSES
-    <div ref={mapContainer} className="w-full h-full absolute top-0 left-0" />
-  );
+  return <div ref={mapContainer} className="w-full h-full absolute inset-0" />;
 };

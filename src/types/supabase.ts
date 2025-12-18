@@ -1,6 +1,4 @@
-// CAPS LOCK COMMENT: DEFINING DATABASE TYPES MANUALLY UNTIL YOU GENERATE THEM
-// THIS PREVENTS THE "CANNOT FIND MODULE" ERROR IN YOUR HOOK
-
+// CAPS LOCK COMMENT: ENSURE THIS FILE EXISTS AT src/types/supabase.ts
 export type Json =
   | string
   | number
@@ -20,10 +18,9 @@ export interface Database {
           latitude: number;
           longitude: number;
           type: "TERMINAL" | "STOP";
-          // ADD OTHER COLUMNS AS NEEDED
         };
         Insert: {
-          id?: string;
+          id: string; // REQUIRED BECAUSE WE GENERATE IT CLIENT-SIDE
           created_at?: string;
           name: string;
           latitude: number;
@@ -38,7 +35,17 @@ export interface Database {
           longitude?: number;
           type?: "TERMINAL" | "STOP";
         };
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
     };
   };
 }
