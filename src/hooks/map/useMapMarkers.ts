@@ -23,7 +23,7 @@ export const useMapMarkers = (
     const currentIds = new Set(Object.keys(markerRefs.current));
     const newMarkersMap = new Map(markers.map((m) => [m.id, m]));
 
-    // REMOVE
+    // REMOVE MARKERS THAT NO LONGER EXIST
     currentIds.forEach((id) => {
       if (!newMarkersMap.has(id)) {
         markerRefs.current[id].remove();
@@ -31,12 +31,12 @@ export const useMapMarkers = (
       }
     });
 
-    // ADD / UPDATE
+    // ADD / UPDATE MARKERS
     markers.forEach((marker) => {
       if (typeof marker.lat !== "number" || typeof marker.lng !== "number")
         return;
 
-      // Check if existing
+      // UPDATE EXISTING POSITION IF NEEDED
       if (markerRefs.current[marker.id]) {
         const existing = markerRefs.current[marker.id];
         const pos = existing.getLngLat();
@@ -46,19 +46,27 @@ export const useMapMarkers = (
         return;
       }
 
-      // [RESTORED FEATURE] APPLY COLOR & ICON LOGIC
+      // DETERMINE COLOR & ICON BASED ON VEHICLE TYPES
       const { color, icon } = getMarkerStyle(marker.vehicleTypes);
 
       const el = document.createElement("div");
       el.className =
         "flex items-center justify-center cursor-pointer transition-transform hover:scale-125 hover:z-50";
 
-      // Marker Shape (Pin)
-      el.innerHTML = `
-        <div style="background-color: ${color}" class="w-8 h-8 rounded-full border-2 border-white shadow-md flex items-center justify-center text-sm">
-          ${icon}
-        </div>
-      `;
+      // CAPS LOCK COMMENT: DIFFERENT VISUALS FOR STOP VS TERMINAL/OTHERS
+      // - STOP: SMALL WHITE DOT WITH BLACK CIRCULAR BORDER (NO EMOJI).
+      // - OTHERS: COLORED CIRCLE WITH BLACK BORDER + ICON.
+      if (marker.type === "stop") {
+        el.innerHTML = `
+          <div class="w-3 h-3 rounded-full border border-black bg-white shadow-md"></div>
+        `;
+      } else {
+        el.innerHTML = `
+          <div style="background-color: ${color}" class="w-8 h-8 rounded-full border-2 border-black shadow-md flex items-center justify-center text-sm text-black">
+            ${icon ?? ""}
+          </div>
+        `;
+      }
 
       const newMapboxMarker = new mapboxgl.Marker({ element: el })
         .setLngLat([marker.lng, marker.lat])
@@ -73,9 +81,10 @@ export const useMapMarkers = (
     });
   }, [map, markers]);
 
-  // TEMP MARKER LOGIC
+  // TEMP MARKER (GHOST) LOGIC
   useEffect(() => {
     if (!map) return;
+
     if (tempMarkerRef.current) {
       tempMarkerRef.current.remove();
       tempMarkerRef.current = null;

@@ -17,21 +17,20 @@ export const RouteManagerMap: React.FC = () => {
     activePointIndex,
     confirmMapSelection,
     cancelMapSelection,
-    // [FIX] Removed unused 'startBuilding'
   } = useRouteBuilderStore();
 
   const onMapClickWrapper = (lat: number, lng: number) => {
-    if (isSelectingOnMap) {
-      handleMapClick(lat, lng);
-    } else {
-      handleMapClick(lat, lng);
-    }
+    // CAPS LOCK COMMENT: ALWAYS UPDATE ROUTE STORE MARKER LOGIC
+    handleMapClick(lat, lng);
   };
 
   const onMarkerClickWrapper = (marker: Stop) => {
     if (isSelectingOnMap) {
+      // CAPS LOCK COMMENT: WHEN IN MAP SELECTION MODE, CLICKING AN EXISTING STOP
+      // CAPS LOCK COMMENT: DIRECTLY UPDATES THE ACTIVE ROUTE POINT (NO STOP FORM)
       confirmMapSelection(marker);
     } else {
+      // CAPS LOCK COMMENT: NORMAL MODE = OPEN STOP FORM FOR EDITING
       selectMarker(marker);
     }
   };
@@ -55,18 +54,21 @@ export const RouteManagerMap: React.FC = () => {
     }
   };
 
+  const selectionLabel = activePointIndex === 0 ? "Origin" : "Stop";
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full absolute inset-0" />
 
+      {/* CAPS LOCK COMMENT: MAP SELECTION BANNER - UPDATED TO MATCH WHITE/EMERALD THEME */}
       {isSelectingOnMap && (
-        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-slate-900/90 text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white text-slate-900 px-6 py-3 rounded-full shadow-lg border border-emerald-200 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
           <span className="font-bold text-sm">
-            Select {activePointIndex === 0 ? "Origin" : "Stop"} Point
+            Select {selectionLabel} Point
           </span>
           <button
             onClick={cancelMapSelection}
-            className="text-slate-400 hover:text-white font-bold text-xs uppercase"
+            className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase"
           >
             Cancel
           </button>
@@ -75,7 +77,7 @@ export const RouteManagerMap: React.FC = () => {
 
       <button
         onClick={handleRecenter}
-        className="absolute bottom-8 right-5 z-20 bg-white p-3 rounded-full shadow-lg border-2 border-slate-100 text-slate-600 hover:text-blue-600 transition-all"
+        className="absolute bottom-8 right-5 z-20 bg-white p-3 rounded-full shadow-lg border-2 border-slate-100 text-slate-600 hover:text-emerald-600 transition-all"
         title="Recenter Map to Your Location"
       >
         <Crosshair size={24} />

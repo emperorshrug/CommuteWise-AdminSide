@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 import { Map, LayoutDashboard, Settings, LogOut } from "lucide-react";
 
-export default function GlobalSidebar() {
-  const [isExpanded, setIsExpanded] = useState(false);
+// CAPS LOCK COMMENT: CONTROLLED COMPONENT - PARENT (APP) OWNS EXPANDED/COLLAPSED STATE
+interface GlobalSidebarProps {
+  isExpanded: boolean;
+  onToggle: () => void;
+}
 
+export default function GlobalSidebar({
+  isExpanded,
+  onToggle,
+}: GlobalSidebarProps) {
   return (
     <div
       className={`h-screen bg-white text-slate-600 flex flex-col z-50 border-r border-slate-200 shadow-xl transition-[width] duration-300 ease-in-out ${
@@ -12,7 +19,7 @@ export default function GlobalSidebar() {
     >
       {/* --- HEADER (CLICK TO TOGGLE) --- */}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={onToggle}
         className="h-16 flex items-center px-4 border-b border-slate-100 shrink-0 cursor-pointer hover:bg-slate-50 transition-colors gap-4"
         title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
       >

@@ -3,10 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
 import { Stop } from "../types";
 
-// DB Types
+// CAPS LOCK COMMENT: SUPABASE INSERT TYPE FOR STOPS TABLE
 type StopInsert = Database["public"]["Tables"]["stops"]["Insert"];
 
-// Initialize Supabase Client
+// CAPS LOCK COMMENT: INITIALIZE SUPABASE CLIENT USING ENV VARS
 const supabase = createClient<Database>(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -23,7 +23,7 @@ interface RouteState {
   fetchMarkers: () => Promise<void>;
   handleMapClick: (lat: number, lng: number) => void;
   selectMarker: (marker: Stop | null) => void;
-  saveMarker: (marker: Stop) => Promise<void>;
+  saveMarker: (marker: Stop) => Promise<Stop | null>;
   deleteMarker: (id: string) => Promise<void>;
 }
 
@@ -45,6 +45,7 @@ export const useRouteStore = create<RouteState>((set, get) => ({
             const lat = Number(item.latitude);
             const lng = Number(item.longitude);
             if (isNaN(lat) || isNaN(lng)) return null;
+
             return {
               id: item.id,
               lat,
@@ -60,7 +61,7 @@ export const useRouteStore = create<RouteState>((set, get) => ({
         set({ markers: formattedData });
       }
     } catch (error) {
-      console.error("Error fetching markers:", error);
+      console.error("ERROR FETCHING MARKERS:", error);
     } finally {
       set({ isLoading: false });
     }
@@ -69,20 +70,19 @@ export const useRouteStore = create<RouteState>((set, get) => ({
   handleMapClick: (lat, lng) => {
     if (isNaN(lat) || isNaN(lng)) return;
 
-    // 1. Set Ghost Marker
+    // CAPS LOCK COMMENT: ALWAYS SET GHOST MARKER FOR VISUAL FEEDBACK
     set({ tempMarker: { lat, lng } });
 
-    // 2. Logic: If a marker is already selected, just move it.
-    // If nothing selected, create a new one.
     const currentSelected = get().selectedMarker;
 
+    // CAPS LOCK COMMENT: IF A MARKER IS ALREADY SELECTED, MOVE IT; OTHERWISE CREATE A NEW ONE
     if (currentSelected) {
       set({
         selectedMarker: {
           ...currentSelected,
           lat,
           lng,
-          barangay: "", // Reset barangay on move
+          barangay: "", // RESET BARANGAY ON MOVE
         },
       });
     } else {
@@ -101,7 +101,7 @@ export const useRouteStore = create<RouteState>((set, get) => ({
   },
 
   selectMarker: (marker) => {
-    // If we select an existing marker, clear the ghost marker
+    // CAPS LOCK COMMENT: CLEAR GHOST MARKER WHEN AN EXISTING MARKER IS SELECTED OR SELECTION CLEARED
     set({ selectedMarker: marker, tempMarker: null });
   },
 
@@ -121,11 +121,20 @@ export const useRouteStore = create<RouteState>((set, get) => ({
       const { error } = await supabase.from("stops").upsert(payload);
       if (error) throw error;
 
+      // CAPS LOCK COMMENT: REFRESH MARKERS SO NEW/UPDATED STOP IS AVAILABLE FOR SEARCH + ROUTE BUILDER
       await get().fetchMarkers();
+
+      // CAPS LOCK COMMENT: FIND THE JUST-SAVED STOP FROM THE REFRESHED MARKER LIST
+      const saved = get().markers.find((m) => m.id === marker.id) ?? {
+        ...marker,
+      };
+
       set({ selectedMarker: null, tempMarker: null });
+      return saved;
     } catch (error) {
-      console.error("Error saving marker:", error);
+      console.error("ERROR SAVING MARKER:", error);
       alert("Failed to save marker.");
+      return null;
     } finally {
       set({ isLoading: false });
     }
@@ -142,7 +151,7 @@ export const useRouteStore = create<RouteState>((set, get) => ({
         selectedMarker: null,
       }));
     } catch (error) {
-      console.error("Error deleting marker:", error);
+      console.error("ERROR DELETING MARKER:", error);
     } finally {
       set({ isLoading: false });
     }
